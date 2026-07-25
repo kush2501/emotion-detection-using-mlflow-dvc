@@ -1,15 +1,30 @@
-# Byte-compiled / optimized / DLL files
+# =====================================
+# Python Bytecode
+# =====================================
 __pycache__/
 *.py[cod]
+*$py.class
 
-# C extensions
+# =====================================
+# C Extensions
+# =====================================
 *.so
 
-# Distribution / packaging
-.Python
+# =====================================
+# Virtual Environments
+# =====================================
 env/
+venv/
+.venv/
+new_env/
+mlops_env/
+mlops_old_env/
+
+# =====================================
+# Distribution / Packaging
+# =====================================
+.Python
 build/
-develop-eggs/
 dist/
 downloads/
 eggs/
@@ -19,75 +34,94 @@ lib64/
 parts/
 sdist/
 var/
+develop-eggs/
 *.egg-info/
 .installed.cfg
 *.egg
 
+# =====================================
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+# =====================================
 *.manifest
 *.spec
 
-# Installer logs
+# =====================================
+# Installer Logs
+# =====================================
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# =====================================
+# Unit Test / Coverage
+# =====================================
 htmlcov/
 .tox/
+.pytest_cache/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
 coverage.xml
+nosetests.xml
 *.cover
 
-# Translations
-*.mo
-*.pot
+# =====================================
+# Type Checking
+# =====================================
+.mypy_cache/
 
-# Django stuff:
+# =====================================
+# Logs
+# =====================================
 *.log
 
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
-# DotEnv configuration
+# =====================================
+# Environment Variables
+# =====================================
 .env
 
-# Database
+# =====================================
+# Databases
+# =====================================
 *.db
+*.sqlite3
 *.rdb
 
-# Pycharm
-.idea
-
-# VS Code
+# =====================================
+# IDE Settings
+# =====================================
+.idea/
 .vscode/
-
-# Spyder
 .spyproject/
 
-# Jupyter NB Checkpoints
+# =====================================
+# Jupyter
+# =====================================
 .ipynb_checkpoints/
 
-# exclude data from source control by default
-/data/
-
-# Mac OS-specific storage files
+# =====================================
+# Operating System
+# =====================================
 .DS_Store
+Thumbs.db
 
-# vim
+# =====================================
+# Vim
+# =====================================
 *.swp
 *.swo
 
-# Mypy cache
-.mypy_cache/
-
-# Enviornment.
-mlops_old_env
+# =====================================
+# MLflow
+# =====================================
 mlruns/
+
+# =====================================
+# Data (DVC manages data separately)
+# =====================================
+data/
+
+# =====================================
+# Model Artifacts
+# (Uncomment if models are generated locally)
+# =====================================
+# models/
