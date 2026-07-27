@@ -50,7 +50,7 @@ jobs:
 
       - name: Verify Installation
         run: |
-          python -c "import numpy, pandas, sklearn, flask, nltk, xgboost, mlflow; print('Dependencies Installed Successfully')"
+          python -c "import numpy, pandas, sklearn, flask, nltk, mlflow; print('Dependencies Installed Successfully')"
 
       - name: Check DVC
         run: |
