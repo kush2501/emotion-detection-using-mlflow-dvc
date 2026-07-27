@@ -1,19 +1,44 @@
+# Git
 .git
 .github
+.gitignore
 
+# Virtual Environments
 new_env
 mlops_env
+venv
+.venv
+
+# Python Cache
 __pycache__
-.pytest_cache
-
-notebooks
-tests
-docs
-
-mlruns
-logs
-
 *.pyc
 *.pyo
 
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+
+# IDE
+.vscode
+.idea
+
+# Documentation
+docs
+notebooks
+
+# Logs & Tracking
+logs
+mlruns
+
+# OS Files
+.DS_Store
+
+# Packaging
+*.egg-info
+
+# Secrets
 .env
+
+# Optional
+README.md

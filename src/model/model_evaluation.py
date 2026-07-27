@@ -18,6 +18,7 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
 )
+from dotenv import load_dotenv
 
 # -------------------- Logger -------------------- #
 
@@ -40,6 +41,10 @@ logger = logging.getLogger(__name__)
 # -------------------- Project Root -------------------- #
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# -------------------- Load Environment Variables -------------------- #
+
+load_dotenv(BASE_DIR / ".env")
 
 DATA_DIR = BASE_DIR / "data"
 ARTIFACTS_DIR = BASE_DIR / "artifacts"

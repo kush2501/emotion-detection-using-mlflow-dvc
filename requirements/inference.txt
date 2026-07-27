@@ -1,8 +1,7 @@
--r training.txt
+-r base.txt
 
 # ==========================================
-# Experiment Tracking
+# Inference / Deployment Dependencies
 # ==========================================
 
-mlflow==2.22.0
-dagshub==0.7.0
+gunicorn==23.0.0
