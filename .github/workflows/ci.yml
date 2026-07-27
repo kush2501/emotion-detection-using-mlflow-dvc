@@ -130,3 +130,13 @@ jobs:
       - name: Run Flask Tests
         run: |
           python -m pytest tests/test_flask_app.py -v
+
+      # ==========================================================
+      # Build Docker Image
+      # ==========================================================
+      - name: Build Docker Image
+        run: |
+          docker build \
+            -t emotion-detection:${{ github.sha }} \
+            -t emotion-detection:latest \
+            .
