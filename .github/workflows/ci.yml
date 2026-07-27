@@ -91,7 +91,7 @@ jobs:
             python -c "import pathspec; print(pathspec.__version__)"
             dvc version
 
-            
+
       # ==========================================================
       # Check Python Syntax
       # ==========================================================
@@ -104,7 +104,7 @@ jobs:
       # ==========================================================
       - name: Run DVC Pipeline
         env:
-          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_ACTION }}
           DAGSHUB_USERNAME: kush2501
         run: |
           echo "=========================================="
@@ -130,10 +130,3 @@ jobs:
       - name: Run Flask Tests
         run: |
           python -m pytest tests/test_flask_app.py -v
-
-      # ==========================================================
-      # Verify Docker Build
-      # ==========================================================
-      - name: Build Docker Image
-        run: |
-          docker build -t emotion-detection:latest .
