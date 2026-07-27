@@ -27,11 +27,11 @@ htmlcov
 docs
 notebooks
 
-# Logs & Tracking
+# Logs & Experiment Tracking
 logs
 mlruns
 
-# OS Files
+# Operating System
 .DS_Store
 
 # Packaging

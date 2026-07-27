@@ -4,22 +4,29 @@
 FROM python:3.11-slim
 
 # ==========================================================
+# Python Environment
+# ==========================================================
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# ==========================================================
 # Working Directory
 # ==========================================================
 WORKDIR /app
 
 # ==========================================================
-# Copy Only Requirements First (Docker Layer Caching)
+# Copy Requirements First (Layer Caching)
 # ==========================================================
 COPY requirements ./requirements
 
 # ==========================================================
-# Install Only Inference Dependencies
+# Upgrade pip & Install Dependencies
 # ==========================================================
-RUN pip install --no-cache-dir -r requirements/inference.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements/inference.txt
 
 # ==========================================================
-# Copy Application Source Code
+# Copy Application Source
 # ==========================================================
 COPY . .
 
@@ -29,6 +36,6 @@ COPY . .
 EXPOSE 5000
 
 # ==========================================================
-# Start Flask Application
+# Start Application
 # ==========================================================
 CMD ["python", "-m", "flask_app.app"]
