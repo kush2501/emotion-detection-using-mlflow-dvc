@@ -133,7 +133,7 @@ def save_model(model):
 
         # -------------------- Deployment -------------------- #
 
-        MODELS_DIR = BASE_DIR / "models"
+        MODELS_DIR = BASE_DIR / "artifacts"
         MODELS_DIR.mkdir(exist_ok=True)
 
         DEPLOYMENT_MODEL_PATH = MODELS_DIR / "model.pkl"
