@@ -1,4 +1,4 @@
 [core]
     remote = storage
 ['remote "storage"']
-    url = D:\DVC_Remote_Storage
+    url = s3://emotion-detection-dvc-storage
