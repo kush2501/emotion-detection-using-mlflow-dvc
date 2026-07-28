@@ -140,3 +140,9 @@ jobs:
             -t emotion-detection:${{ github.sha }} \
             -t emotion-detection:latest \
             .
+      # Image Inspect.
+      - name: Docker Info
+        run: |
+          docker version
+          docker images
+          docker ps -a
