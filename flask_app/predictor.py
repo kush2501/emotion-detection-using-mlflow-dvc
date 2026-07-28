@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # -------------------- Load Model -------------------- #
 
-MODEL_PATH = BASE_DIR / "models" / "model.pkl"
+MODEL_PATH = BASE_DIR / "artifacts" / "model.pkl"
 
 with open(MODEL_PATH, "rb") as file:
     model = pickle.load(file)
