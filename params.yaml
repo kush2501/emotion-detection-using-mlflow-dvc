@@ -1,5 +1,23 @@
+# -------------------- Data Ingestion -------------------- #
+
 data_ingestion:
   test_size: 0.2
 
+# -------------------- Feature Engineering -------------------- #
+
 feature_engineering:
+  vectorizer: count          # count | tfidf
   max_features: 2000
+  lowercase: true
+  stop_words: english
+  ngram_range: [1, 1]
+
+# -------------------- Model -------------------- #
+
+model:
+  algorithm: logistic_regression
+
+# -------------------- MLflow -------------------- #
+
+mlflow:
+  experiment_name: emotion_detection

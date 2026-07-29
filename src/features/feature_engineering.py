@@ -31,7 +31,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # -------------------- Load Parameters -------------------- #
 
-def load_params(params_path: str) -> int:
+def load_params(params_path: str) -> dict:
 
     try:
 
@@ -40,17 +40,16 @@ def load_params(params_path: str) -> int:
         with open(params_path, "r") as file:
             params = yaml.safe_load(file)
 
-        max_features = params["feature_engineering"]["max_features"]
+        feature_config = params["feature_engineering"]
 
-        logger.info(f"max_features = {max_features}")
+        logger.info(f"Feature Configuration : {feature_config}")
 
-        return max_features
+        return feature_config
 
     except Exception:
 
         logger.exception("Failed to load parameters.")
         raise
-
 
 # -------------------- Load Data -------------------- #
 
@@ -82,12 +81,18 @@ def load_data():
 def apply_bow(
     train_df,
     test_df,
-    max_features
+    feature_config
 ):
 
     try:
 
         logger.info("Applying Bag of Words...")
+
+        # Read configuration
+        max_features = feature_config["max_features"]
+        lowercase = feature_config["lowercase"]
+        stop_words = feature_config["stop_words"]
+        ngram_range = tuple(feature_config["ngram_range"])
 
         X_train = train_df["content"].values
         y_train = train_df["sentiment"].values
@@ -96,7 +101,10 @@ def apply_bow(
         y_test = test_df["sentiment"].values
 
         vectorizer = CountVectorizer(
-            max_features=max_features
+            max_features=max_features,
+            lowercase=lowercase,
+            stop_words=stop_words,
+            ngram_range=ngram_range
         )
 
         X_train_bow = vectorizer.fit_transform(X_train)
@@ -182,14 +190,14 @@ def main():
         logger.info("Feature Engineering Pipeline Started")
 
         PARAMS_PATH = BASE_DIR / "params.yaml"
-        max_features = load_params(PARAMS_PATH)
+        feature_config = load_params(PARAMS_PATH)
 
         train_data, test_data = load_data()
 
         train_bow, test_bow, vectorizer = apply_bow(
             train_data,
             test_data,
-            max_features
+            feature_config
         )
 
         save_data(
