@@ -17,7 +17,7 @@ stages:
     - data/interim
 
   feature_engineering:
-    cmd: python src/features/feature_engineering.py
+    cmd: python -m src.features.feature_engineering
     deps:
     - data/interim
     - src/features/feature_engineering.py
@@ -27,7 +27,7 @@ stages:
     - data/processed
 
   model_building:
-    cmd: python src/model/model_building.py
+    cmd: python -m src.model.model_building
     deps:
     - data/processed
     - src/model/model_building.py
@@ -35,7 +35,7 @@ stages:
     - artifacts/model.pkl
 
   model_evaluation:
-    cmd: python src/model/model_evaluation.py
+    cmd: python -m src.model.model_evaluation
     deps:
     - artifacts/model.pkl
     - src/model/model_evaluation.py

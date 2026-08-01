@@ -6,16 +6,50 @@ data_ingestion:
 # -------------------- Feature Engineering -------------------- #
 
 feature_engineering:
-  vectorizer: count          # count | tfidf
-  max_features: 2000
+  vectorizer: tfidf
+  max_features: 5000
   lowercase: true
   stop_words: english
-  ngram_range: [1, 1]
+  ngram_range: [1, 2]
 
 # -------------------- Model -------------------- #
 
 model:
   algorithm: logistic_regression
+
+  logistic_regression:
+    C: 1.2743652133123355
+    solver: liblinear
+    penalty: l2
+    max_iter: 1000
+
+  random_forest:
+    n_estimators: 200
+    criterion: gini
+    max_depth: null
+    min_samples_split: 2
+    min_samples_leaf: 1
+    random_state: 42
+
+  svm:
+    C: 1.0
+    kernel: rbf
+    gamma: scale
+    probability: true
+    random_state: 42
+
+  naive_bayes:
+    alpha: 1.0
+    fit_prior: true
+
+  xgboost:
+    n_estimators: 200
+    learning_rate: 0.1
+    max_depth: 6
+    subsample: 1.0
+    colsample_bytree: 1.0
+    random_state: 42
+    eval_metric: logloss
 
 # -------------------- MLflow -------------------- #
 

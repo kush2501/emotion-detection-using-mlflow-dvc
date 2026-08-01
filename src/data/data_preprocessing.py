@@ -69,10 +69,29 @@ def lemmatization(text:str)->str:
 
     return " " .join(text)
 
-def remove_stop_words(text:str)->str:
+def remove_stop_words(text: str) -> str:
+    """
+    Remove English stop words while preserving important negation words.
+    """
+
     stop_words = set(stopwords.words("english"))
-    Text=[i for i in str(text).split() if i not in stop_words]
-    return " ".join(Text)
+
+    negation_words = {
+        "no",
+        "not",
+        "nor",
+        "never"
+    }
+
+    stop_words = stop_words - negation_words
+
+    filtered_words = [
+        word
+        for word in str(text).split()
+        if word not in stop_words
+    ]
+
+    return " ".join(filtered_words)
 
 def removing_numbers(text:str)->str:
     text=''.join([i for i in text if not i.isdigit()])

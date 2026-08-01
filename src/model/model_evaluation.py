@@ -19,6 +19,7 @@ from sklearn.metrics import (
     f1_score,
 )
 from dotenv import load_dotenv
+from src.evaluation.evaluator import evaluate_model
 
 # -------------------- Logger -------------------- #
 
@@ -107,7 +108,7 @@ def load_model():
 
 # -------------------- Evaluate Model -------------------- #
 
-def evaluate_model(model, X_test, y_test):
+def evaluate_model_old(model, X_test, y_test):
     """
     Evaluate model performance.
     """
@@ -218,7 +219,7 @@ def main():
 
             # -------------------- Evaluate Model -------------------- #
 
-            metrics, signature = evaluate_model(
+            metrics, signature = evaluate_model_old(
                 model,
                 X_test,
                 y_test

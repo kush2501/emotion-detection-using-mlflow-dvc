@@ -4,7 +4,8 @@ import logging
 import pandas as pd
 
 from pathlib import Path
-from sklearn.linear_model import LogisticRegression
+from src.model.model_factory import get_model
+from src.config.config_loader import load_model_config
 
 
 # -------------------- Logger -------------------- #
@@ -28,7 +29,6 @@ logger = logging.getLogger(__name__)
 # -------------------- Project Root -------------------- #
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
 
 # -------------------- Load Data -------------------- #
 
@@ -81,24 +81,17 @@ def split_features_target(train_df):
 
 # -------------------- Train Model -------------------- #
 
-def train_model(X_train, y_train):
-    """
-    Train Logistic Regression model.
-    """
+def train_model(X_train, y_train, model_config):
 
     try:
 
-        logger.info("Training Logistic Regression Model...")
+        model = get_model(model_config)
 
-        model = LogisticRegression(
-            C=1,
-            solver="liblinear",
-            penalty="l2"
-        )
+        logger.info(f"Training {model.__class__.__name__}...")
 
         model.fit(X_train, y_train)
 
-        logger.info("Model trained successfully.")
+        logger.info(f"{model.__class__.__name__} trained successfully.")
 
         return model
 
@@ -157,6 +150,8 @@ def main():
         logger.info("=" * 60)
         logger.info("Model Building Pipeline Started")
 
+        model_config = load_model_config()
+
         train_data = load_data()
 
         X_train, y_train = split_features_target(
@@ -165,7 +160,8 @@ def main():
 
         model = train_model(
             X_train,
-            y_train
+            y_train,
+            model_config
         )
 
         save_model(model)

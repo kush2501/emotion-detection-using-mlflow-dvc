@@ -5,7 +5,9 @@ import logging
 import pandas as pd
 
 from pathlib import Path
+from src.features.vectorizer_factory import get_vectorizer
 from sklearn.feature_extraction.text import CountVectorizer
+from src.config.config_loader import load_feature_config
 
 # -------------------- Logger -------------------- #
 
@@ -28,28 +30,6 @@ logger = logging.getLogger(__name__)
 # -------------------- Project Root -------------------- #
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
-# -------------------- Load Parameters -------------------- #
-
-def load_params(params_path: str) -> dict:
-
-    try:
-
-        logger.info("Loading parameters from params.yaml...")
-
-        with open(params_path, "r") as file:
-            params = yaml.safe_load(file)
-
-        feature_config = params["feature_engineering"]
-
-        logger.info(f"Feature Configuration : {feature_config}")
-
-        return feature_config
-
-    except Exception:
-
-        logger.exception("Failed to load parameters.")
-        raise
 
 # -------------------- Load Data -------------------- #
 
@@ -86,7 +66,11 @@ def apply_bow(
 
     try:
 
-        logger.info("Applying Bag of Words...")
+        vectorizer_type = feature_config["vectorizer"]
+
+        logger.info(
+            f"Applying feature extraction using: {vectorizer_type}"
+        )
 
         # Read configuration
         max_features = feature_config["max_features"]
@@ -100,12 +84,7 @@ def apply_bow(
         X_test = test_df["content"].values
         y_test = test_df["sentiment"].values
 
-        vectorizer = CountVectorizer(
-            max_features=max_features,
-            lowercase=lowercase,
-            stop_words=stop_words,
-            ngram_range=ngram_range
-        )
+        vectorizer = get_vectorizer(feature_config)
 
         X_train_bow = vectorizer.fit_transform(X_train)
         X_test_bow = vectorizer.transform(X_test)
@@ -116,7 +95,8 @@ def apply_bow(
         test_bow = pd.DataFrame(X_test_bow.toarray())
         test_bow["label"] = y_test
 
-        logger.info("Bag of Words completed.")
+        logger.info(f"{vectorizer_type.upper()} feature extraction completed.")
+
         logger.info(f"Vocabulary Size : {len(vectorizer.vocabulary_)}")
 
         return train_bow, test_bow, vectorizer
@@ -162,7 +142,7 @@ def save_vectorizer(vectorizer):
 
     try:
 
-        logger.info("Saving CountVectorizer...")
+        logger.info("Saving fitted vectorizer...")
 
         ARTIFACTS_DIR = BASE_DIR / "artifacts"
         ARTIFACTS_DIR.mkdir(exist_ok=True)
@@ -189,8 +169,7 @@ def main():
         logger.info("=" * 60)
         logger.info("Feature Engineering Pipeline Started")
 
-        PARAMS_PATH = BASE_DIR / "params.yaml"
-        feature_config = load_params(PARAMS_PATH)
+        feature_config = load_feature_config()
 
         train_data, test_data = load_data()
 
