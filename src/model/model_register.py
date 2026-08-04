@@ -6,7 +6,9 @@ import mlflow
 import dagshub
 
 from mlflow import MlflowClient
+from pathlib import Path
 
+from dotenv import load_dotenv
 # -------------------- Logger -------------------- #
 
 LOG_DIR = "logs"
@@ -25,6 +27,12 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+
+# -------------------- Load Environment Variables -------------------- #
+
+load_dotenv(BASE_DIR / ".env")
 # -------------------- Load Run Information -------------------- #
 
 def load_run_info():
@@ -53,173 +61,213 @@ def load_run_info():
 
 def register_model(run_info):
     """
-    Register MLflow model using Run ID
-    and move the newly registered model to Staging.
+    Register the evaluated MLflow model
+    and return its registered version.
     """
 
     try:
 
-        client = MlflowClient()
-
         run_id = run_info["run_id"]
-        model_name = run_info["model_name"]
 
-        model_uri = f"runs:/{run_id}/{model_name}"
+        registered_model_name = "emotion-detection-model"
+        artifact_path = "model"
 
-        logger.info(f"Run ID      : {run_id}")
-        logger.info(f"Model URI   : {model_uri}")
+        model_uri = (
+            f"runs:/{run_id}/{artifact_path}"
+        )
 
-        # Register Model
+        logger.info("=" * 60)
+        logger.info("Registering Champion Candidate")
+
+        logger.info(f"Run ID           : {run_id}")
+        logger.info(f"Model URI        : {model_uri}")
+        logger.info(
+            f"Registered Model : {registered_model_name}"
+        )
+
         registered_model = mlflow.register_model(
             model_uri=model_uri,
-            name=model_name
+            name=registered_model_name
         )
 
         version = registered_model.version
 
-        logger.info("=" * 60)
         logger.info("Model Registered Successfully")
-        logger.info(f"Registered Model : {model_name}")
         logger.info(f"Version          : {version}")
-
-        # -------------------------------------------------------
-        # Move Newly Registered Model to Staging
-        # -------------------------------------------------------
-
-        client.transition_model_version_stage(
-            name=model_name,
-            version=version,
-            stage="Staging",
-            archive_existing_versions=False
-        )
-
-        logger.info(f"Stage            : Staging")
-
-        # Compare with Production and Promote if Better
-        # -------------------------------------------------------
-        promote_best_model(model_name, version)
-        
         logger.info("=" * 60)
+
+        return registered_model_name, version
 
     except Exception:
-        logger.exception("Model Registration Failed")
+
+        logger.exception(
+            "Model Registration Failed"
+        )
         raise
 
-
 def promote_best_model(model_name, new_version):
+    """
+    Compare the newly registered model with the current champion
+    using F1 score and assign MLflow aliases.
+    """
 
     try:
+
         logger.info("=" * 60)
-        logger.info("Starting Model Comparison with Production")
+        logger.info("Starting Champion Model Evaluation")
         logger.info("=" * 60)
 
         client = MlflowClient()
 
-        logger.info("=" * 60)
-        logger.info("Checking Production Model")
-
-        # ------------------------------
-        # New model accuracy
-        # ------------------------------
+        # -------------------------------------------
+        # Get new model F1 score
+        # -------------------------------------------
 
         new_version_info = client.get_model_version(
             name=model_name,
             version=new_version
         )
 
-        new_run = client.get_run(new_version_info.run_id)
-
-        new_accuracy = float(
-            new_run.data.metrics.get("accuracy", 0)
+        new_run = client.get_run(
+            new_version_info.run_id
         )
 
-        logger.info(f"New Accuracy : {new_accuracy}")
+        new_f1 = new_run.data.metrics.get("f1_score")
 
-        # ------------------------------
-        # Production model
-        # ------------------------------
-
-        production_versions = client.get_latest_versions(
-            model_name,
-            stages=["Production"]
-        )
-
-        # -----------------------------------
-        # First Production Model
-        # -----------------------------------
-
-        if len(production_versions) == 0:
-
-            client.transition_model_version_stage(
-                name=model_name,
-                version=new_version,
-                stage="Production"
+        if new_f1 is None:
+            raise ValueError(
+                "F1 score not found in the new model MLflow run."
             )
 
-            logger.info("No Production Model Found.")
-            logger.info("Current Model Promoted to Production.")
+        new_f1 = float(new_f1)
 
-            logger.info("=" * 60)
-            logger.info("Model Comparison Completed")
+        logger.info(
+            f"New Model F1 Score : {new_f1:.4f}"
+        )
+
+        # -------------------------------------------
+        # Find current champion
+        # -------------------------------------------
+
+        try:
+
+            champion_version = (
+                client.get_model_version_by_alias(
+                    name=model_name,
+                    alias="champion"
+                )
+            )
+
+        except Exception:
+
+            champion_version = None
+
+        # -------------------------------------------
+        # No champion yet
+        # -------------------------------------------
+
+        if champion_version is None:
+
+            client.set_registered_model_alias(
+                name=model_name,
+                alias="champion",
+                version=new_version
+            )
+
+            logger.info("No Existing Champion Found.")
+            logger.info(
+                f"Version {new_version} assigned as CHAMPION."
+            )
+
             logger.info("=" * 60)
 
             return
 
-        # -----------------------------------
-        # Existing Production
-        # -----------------------------------
+        # -------------------------------------------
+        # Existing champion F1
+        # -------------------------------------------
 
-        production = production_versions[0]
+        champion_run = client.get_run(
+            champion_version.run_id
+        )
 
-        production_run = client.get_run(production.run_id)
+        champion_f1 = (
+            champion_run.data.metrics.get("f1_score")
+        )
 
-        production_accuracy = float(
-            production_run.data.metrics.get("accuracy", 0)
+        if champion_f1 is None:
+            raise ValueError(
+                "F1 score not found for current champion."
+            )
+
+        champion_f1 = float(champion_f1)
+
+        logger.info(
+            f"Current Champion Version : "
+            f"{champion_version.version}"
         )
 
         logger.info(
-            f"Production Accuracy : {production_accuracy}"
+            f"Current Champion F1      : "
+            f"{champion_f1:.4f}"
         )
 
-        # -----------------------------------
-        # Compare Accuracy
-        # -----------------------------------
+        # -------------------------------------------
+        # Compare models
+        # -------------------------------------------
 
-        if new_accuracy > production_accuracy:
+        if new_f1 > champion_f1:
 
-            client.transition_model_version_stage(
+            # Previous champion becomes challenger
+            client.set_registered_model_alias(
                 name=model_name,
-                version=production.version,
-                stage="Archived"
+                alias="challenger",
+                version=champion_version.version
             )
 
-            client.transition_model_version_stage(
+            # New model becomes champion
+            client.set_registered_model_alias(
                 name=model_name,
-                version=new_version,
-                stage="Production"
+                alias="champion",
+                version=new_version
             )
 
-            logger.info("Better Model Found")
-            logger.info("Old Production Archived")
-            logger.info("New Model Promoted to Production")
+            logger.info("Better Model Found.")
+            logger.info(
+                f"Version {new_version} promoted to CHAMPION."
+            )
 
-
-            logger.info("=" * 60)
-            logger.info("Model Comparison Completed")
-            logger.info("=" * 60)
+            logger.info(
+                f"Version {champion_version.version} "
+                f"moved to CHALLENGER."
+            )
 
         else:
 
-            logger.info("Current Production Model is Better")
-            logger.info("New Model remains in Staging")
+            # New model becomes challenger
+            client.set_registered_model_alias(
+                name=model_name,
+                alias="challenger",
+                version=new_version
+            )
 
-            logger.info("=" * 60)
-            logger.info("Model Comparison Completed")
-            logger.info("=" * 60)
+            logger.info(
+                "Current Champion Performs Better."
+            )
+
+            logger.info(
+                f"Version {new_version} assigned as CHALLENGER."
+            )
+
+        logger.info("=" * 60)
+        logger.info("Champion Model Evaluation Completed")
+        logger.info("=" * 60)
 
     except Exception:
 
-        logger.exception("Promotion Failed")
+        logger.exception(
+            "Champion Model Evaluation Failed"
+        )
         raise
 
 # -------------------- Main -------------------- #
@@ -263,8 +311,16 @@ def main():
         run_info = load_run_info()
 
         # -------------------- Register Model -------------------- #
+        model_name, version = register_model(
+            run_info
+        )
 
-        register_model(run_info)
+        # -------------------- Champion Promotion -------------------- #
+
+        promote_best_model(
+            model_name,
+            version
+        )
 
         logger.info("Model Registry Pipeline Completed Successfully.")
         logger.info("=" * 60)

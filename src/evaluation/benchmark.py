@@ -116,10 +116,10 @@ class BenchmarkEngine:
 
         return results_df
 
-
     def save_results(self):
         """
-        Save benchmark results as a CSV file.
+        Save benchmark results as a CSV file
+        and display the champion model.
         """
 
         logger.info("Saving benchmark results...")
@@ -132,9 +132,15 @@ class BenchmarkEngine:
         )
 
         reports_dir = BASE_DIR / "reports"
-        reports_dir.mkdir(parents=True, exist_ok=True)
+        reports_dir.mkdir(
+            parents=True,
+            exist_ok=True
+        )
 
-        output_path = reports_dir / "benchmark_results.csv"
+        output_path = (
+            reports_dir
+            / "benchmark_results.csv"
+        )
 
         results_df.to_csv(
             output_path,
@@ -144,6 +150,31 @@ class BenchmarkEngine:
         logger.info(
             f"Benchmark results saved to: {output_path}"
         )
+
+        # Select champion model
+        best_model = results_df.iloc[0]
+
+        logger.info("=" * 60)
+        logger.info("CHAMPION MODEL SELECTED")
+
+        logger.info(
+            f"Model         : {best_model['model_name']}"
+        )
+
+        logger.info(
+            f"F1 Score      : {best_model['f1_score']:.4f}"
+        )
+
+        logger.info(
+            f"Accuracy      : {best_model['accuracy']:.4f}"
+        )
+
+        logger.info(
+            f"Training Time : "
+            f"{best_model['training_time']:.2f} seconds"
+        )
+
+        logger.info("=" * 60)
 
         return results_df
 

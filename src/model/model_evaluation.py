@@ -18,6 +18,11 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
 )
+
+from src.config.config_loader import (
+    load_model_config,
+    load_feature_config
+)
 from dotenv import load_dotenv
 from src.evaluation.evaluator import evaluate_model
 
@@ -178,7 +183,7 @@ def main():
         logger.info("=" * 60)
         logger.info("Model Evaluation Pipeline Started")
 
-    # -------------------- DagsHub Authentication -------------------- #
+     # -------------------- DagsHub Authentication -------------------- #
 
         os.environ["MLFLOW_TRACKING_USERNAME"] = "kush2501"
 
@@ -204,10 +209,33 @@ def main():
             mlflow=True
         )
 
-        
         mlflow.set_experiment("dvc-pipeline")
 
-        with mlflow.start_run(run_name="model_evaluation") as run:
+        # -------------------- Load Configuration -------------------- #
+
+        model_config = load_model_config()
+        feature_config = load_feature_config()
+
+        algorithm = model_config["algorithm"]
+
+        # -------------------- Create Run Name -------------------- #
+
+        run_name = (
+            f"{algorithm}_"
+            f"{feature_config['vectorizer']}_"
+            f"{feature_config['max_features']}"
+        )
+
+        with mlflow.start_run(run_name=run_name) as run:
+
+            # -------------------- Set Tags -------------------- #
+
+            mlflow.set_tags({
+                "project": "emotion_detection",
+                "stage": "champion_evaluation",
+                "algorithm": algorithm,
+                "feature_method": feature_config["vectorizer"]
+            })
 
             # -------------------- Load Data -------------------- #
 
@@ -217,7 +245,7 @@ def main():
 
             model = load_model()
 
-            # -------------------- Evaluate Model -------------------- #
+            # -------------------- Evaluate -------------------- #
 
             metrics, signature = evaluate_model_old(
                 model,
@@ -225,19 +253,47 @@ def main():
                 y_test
             )
 
-            # -------------------- Save Metrics -------------------- #
-
             save_metrics(metrics)
 
             # -------------------- Log Metrics -------------------- #
 
             mlflow.log_metrics(metrics)
 
-            # -------------------- Log Parameters -------------------- #
+            # -------------------- Model Parameters -------------------- #
 
             mlflow.log_params(model.get_params())
 
-            # -------------------- Log Model -------------------- #
+            # -------------------- Feature Configuration -------------------- #
+
+            mlflow.log_param("algorithm", algorithm)
+
+            mlflow.log_param(
+                "vectorizer",
+                feature_config["vectorizer"]
+            )
+
+            mlflow.log_param(
+                "max_features",
+                feature_config["max_features"]
+            )
+
+            mlflow.log_param(
+                "ngram_range",
+                str(feature_config["ngram_range"])
+            )
+
+            mlflow.log_param(
+                "lowercase",
+                feature_config["lowercase"]
+            )
+
+            mlflow.log_param(
+                "stop_words",
+                feature_config["stop_words"]
+            )
+
+    
+        # -------------------- Log Model -------------------- #
             input_example = pd.DataFrame(X_test[:5])    
 
             mlflow.sklearn.log_model(
@@ -250,6 +306,7 @@ def main():
 
             mlflow.log_artifact(str(METRICS_PATH))
             mlflow.log_artifact(str(MODEL_PATH))
+            
             # -------------------- Save Run Information -------------------- #
 
             ARTIFACTS_DIR.mkdir(exist_ok=True)
@@ -257,7 +314,8 @@ def main():
             run_info = {
                 "run_id": run.info.run_id,
                 "experiment_id": run.info.experiment_id,
-                "model_name": "model",
+                "run_name": run_name,
+                "model_name": algorithm,
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
 

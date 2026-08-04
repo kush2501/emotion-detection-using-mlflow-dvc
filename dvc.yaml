@@ -21,30 +21,64 @@ stages:
     deps:
     - data/interim
     - src/features/feature_engineering.py
+    - src/config/config_loader.py
+    
     params:
-      - feature_engineering.max_features
+    - feature_engineering.vectorizer
+    - feature_engineering.max_features
+    - feature_engineering.lowercase
+    - feature_engineering.stop_words
+    - feature_engineering.ngram_range
+    
     outs:
     - data/processed
+    - artifacts/vectorizer.pkl
 
   model_building:
     cmd: python -m src.model.model_building
+
     deps:
-    - data/processed
-    - src/model/model_building.py
+      - data/processed
+      - src/model/model_building.py
+      - src/model/model_factory.py
+      - src/config/config_loader.py
+
+    params:
+      - model.algorithm
+      - model.logistic_regression.C
+      - model.logistic_regression.solver
+      - model.logistic_regression.penalty
+      - model.logistic_regression.max_iter
+
     outs:
-    - artifacts/model.pkl
+      - artifacts/model.pkl
 
   model_evaluation:
     cmd: python -m src.model.model_evaluation
+
     deps:
-    - artifacts/model.pkl
-    - src/model/model_evaluation.py
+      - artifacts/model.pkl
+      - data/processed
+      - src/model/model_evaluation.py
+      - src/config/config_loader.py
+
+    params:
+      - model.algorithm
+      - feature_engineering.vectorizer
+      - feature_engineering.max_features
+      - feature_engineering.lowercase
+      - feature_engineering.stop_words
+      - feature_engineering.ngram_range
+
     metrics:
-    - reports/metrics.json
-    - artifacts/run_info.json
+      - reports/metrics.json
+
+    outs:
+      - artifacts/run_info.json
 
   model_register:
-   cmd: python src/model/model_register.py
-   deps:
-   - artifacts/run_info.json
-   - src/model/model_register.py
+    cmd: python -m src.model.model_register
+
+    deps:
+      - artifacts/run_info.json
+      - src/model/model_register.py

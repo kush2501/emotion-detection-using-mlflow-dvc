@@ -7,10 +7,10 @@ data_ingestion:
 
 feature_engineering:
   vectorizer: tfidf
-  max_features: 5000
+  max_features: 10000
   lowercase: true
   stop_words: english
-  ngram_range: [1, 2]
+  ngram_range: [1, 1]
 
 # -------------------- Model -------------------- #
 
@@ -18,7 +18,7 @@ model:
   algorithm: logistic_regression
 
   logistic_regression:
-    C: 1.2743652133123355
+    C: 1.0333143670701204
     solver: liblinear
     penalty: l2
     max_iter: 1000
