@@ -86,14 +86,10 @@ jobs:
       # ==========================================================
       # Verify DVC Installation
       # ==========================================================
-      - name: Debug DVC Installation
+      - name: Verify DVC Installation
         run: |
-            python --version
-            pip freeze
-            pip show dvc
-            pip show pathspec
-            python -c "import pathspec; print(pathspec.__version__)"
-            dvc version
+          dvc version
+          python -c "import dvc, pathspec; print('DVC:', dvc.__version__); print('pathspec:', pathspec.__version__)"
 
 
       # ==========================================================
