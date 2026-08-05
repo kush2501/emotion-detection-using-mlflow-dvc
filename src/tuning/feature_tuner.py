@@ -103,14 +103,13 @@ def evaluate_feature_config(
             "tfidf",
             TfidfVectorizer(
                 max_features=config["max_features"],
-                ngram_range=config["ngram_range"],
-                stop_words="english"
+                ngram_range=config["ngram_range"]
             )
         ),
         (
             "model",
             LogisticRegression(
-                C=1.2743652133123355,
+                C=1.0333143670701204,
                 solver="liblinear",
                 penalty="l2",
                 max_iter=1000,

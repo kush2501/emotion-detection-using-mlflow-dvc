@@ -74,9 +74,8 @@ def objective(trial, X_train, y_train):
         (
             "tfidf",
             TfidfVectorizer(
-                max_features=10000,
-                ngram_range=(1, 1),
-                stop_words="english"
+                max_features=7500,
+                ngram_range=(1, 2)
             )
         ),
         (

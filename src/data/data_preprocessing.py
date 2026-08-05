@@ -1,14 +1,11 @@
 import numpy as np
 import pandas as pd
-
 import os
-
-import re
 import nltk
-import string
-from nltk.corpus import stopwords
-from nltk.stem import  WordNetLemmatizer
 import logging
+
+from src.preprocessing.text_preprocessor import preprocess_text
+
 
 # Downlaod NLTK resources.
 nltk.download('wordnet')
@@ -59,82 +56,14 @@ def load_data()-> tuple[pd.DataFrame, pd.DataFrame]:
         logger.exception("Error while loading datasets.")
         raise
 
-# Text Cleaning Functions.
-def lemmatization(text:str)->str:
-    lemmatizer= WordNetLemmatizer()
-
-    text = text.split()
-
-    text=[lemmatizer.lemmatize(y) for y in text]
-
-    return " " .join(text)
-
-def remove_stop_words(text: str) -> str:
-    """
-    Remove English stop words while preserving important negation words.
-    """
-
-    stop_words = set(stopwords.words("english"))
-
-    negation_words = {
-        "no",
-        "not",
-        "nor",
-        "never"
-    }
-
-    stop_words = stop_words - negation_words
-
-    filtered_words = [
-        word
-        for word in str(text).split()
-        if word not in stop_words
-    ]
-
-    return " ".join(filtered_words)
-
-def removing_numbers(text:str)->str:
-    text=''.join([i for i in text if not i.isdigit()])
-    return text
-
-def lower_case(text:str)->str:
-
-    text = text.split()
-
-    text=[y.lower() for y in text]
-
-    return " " .join(text)
-
-def removing_punctuations(text:str)->str:
-    ## Remove punctuations
-    text = re.sub(r'[%s]' % re.escape("""!"#$%&'()*+,،-./:;<=>؟?@[\]^_`{|}~"""), ' ', text)
-    text = text.replace('؛',"", )
-
-    ## remove extra whitespace
-    text = re.sub(r'\s+', ' ', text)
-    text =  " ".join(text.split())
-    return text.strip()
-
-def removing_urls(text:str)->str:
-    url_pattern = re.compile(r'https?://\S+|www\.\S+')
-    return url_pattern.sub(r'', text)
-
-def remove_small_sentences(df:pd.DataFrame)->None:
-    for i in range(len(df)):
-        if len(df.text.iloc[i].split()) < 3:
-            df.text.iloc[i] = np.nan
-
 def normalize_text(df:pd.DataFrame)->pd.DataFrame:
 
     logger.info("Starting text normalization.....")
-    df.content=df.content.apply(lambda content : lower_case(content))
-    df.content=df.content.apply(lambda content : remove_stop_words(content))
-    df.content=df.content.apply(lambda content : removing_numbers(content))
-    df.content=df.content.apply(lambda content : removing_punctuations(content))
-    df.content=df.content.apply(lambda content : removing_urls(content))
-    df.content=df.content.apply(lambda content : lemmatization(content))
-    
+
+    df["content"] = df["content"].apply(preprocess_text)
+
     logger.info("Text normalization completed.")
+
     return df
 
 # Remove Empty Rows.

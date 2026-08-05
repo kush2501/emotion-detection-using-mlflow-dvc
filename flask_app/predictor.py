@@ -1,7 +1,7 @@
 import pickle
 from pathlib import Path
 
-from .preprocessing import preprocess_text
+from src.preprocessing.text_preprocessor import preprocess_text 
 
 # -------------------- Project Root -------------------- #
 

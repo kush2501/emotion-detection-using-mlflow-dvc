@@ -12,6 +12,15 @@ nltk.download("wordnet", quiet=True)
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words("english"))
 
+# Preserve sentiment-critical negation words
+negation_words = {
+    "no",
+    "not",
+    "nor",
+    "never"
+}
+
+stop_words = stop_words - negation_words
 
 # -------------------- Lower Case -------------------- #
 
