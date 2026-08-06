@@ -37,8 +37,21 @@ mlruns
 # Packaging
 *.egg-info
 
-# Secrets
+# Secrets / Environment Files
 .env
+.env.*
+!.env.example
 
 # Optional
 README.md
+
+# DVC local cache and metadata
+.dvc
+
+# Training / pipeline datasets
+data
+
+# DVC pipeline files
+.dvcignore
+dvc.yaml
+dvc.lock
