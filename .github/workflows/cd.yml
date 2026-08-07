@@ -1,0 +1,100 @@
+name: Emotion Detection CD
+
+on:
+  workflow_run:
+    workflows: ["Emotion Detection CI"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    # CD only runs when CI successfully passes
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      # ==========================================================
+      # Checkout the exact commit tested by CI
+      # ==========================================================
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      # ==========================================================
+      # Login to Docker Hub
+      # ==========================================================
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # ==========================================================
+      # Build and Push Production Docker Image
+      # ==========================================================
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/emotion-detection-mlops:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/emotion-detection-mlops:${{ github.event.workflow_run.head_sha }}
+
+      # ==========================================================
+      # Configure SSH
+      # ==========================================================
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key.pem
+          chmod 600 ~/.ssh/ec2_key.pem
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
+
+      # ==========================================================
+      # Deploy to AWS EC2
+      # ==========================================================
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          ssh -i ~/.ssh/ec2_key.pem "${EC2_USERNAME}@${EC2_HOST}" << EOF
+
+            docker pull ${DOCKERHUB_USERNAME}/emotion-detection-mlops:latest
+
+            docker stop emotion-detection-prod || true
+            docker rm emotion-detection-prod || true
+
+            docker run -d \
+              --name emotion-detection-prod \
+              --restart unless-stopped \
+              -p 5000:5000 \
+              ${DOCKERHUB_USERNAME}/emotion-detection-mlops:latest \
+              gunicorn \
+              --bind 0.0.0.0:5000 \
+              --workers 1 \
+              --threads 2 \
+              --timeout 60 \
+              flask_app.app:app
+
+          EOF
+
+      # ==========================================================
+      # Verify Deployment
+      # ==========================================================
+      - name: Verify Production Deployment
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+        run: |
+          sleep 15
+
+          ssh -i ~/.ssh/ec2_key.pem "${EC2_USERNAME}@${EC2_HOST}" \
+            "docker ps --filter name=emotion-detection-prod && \
+             curl --fail --max-time 10 http://localhost:5000"
