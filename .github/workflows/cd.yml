@@ -1,5 +1,4 @@
 # Production CD workflow
-
 name: Emotion Detection CD
 
 on:
@@ -9,6 +8,8 @@ on:
       - completed
     branches:
       - main
+
+  workflow_dispatch:
 
 jobs:
   deploy:
