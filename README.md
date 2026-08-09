@@ -417,6 +417,18 @@ http://localhost:5000
 
 The application has been deployed as a production-oriented Machine Learning service on AWS EC2.
 
+
+### 🔐 Deployment Security Note
+
+SSH access to the EC2 instance is restricted to trusted sources.
+
+For local administration, SSH port 22 is restricted using the EC2 Security Group with **My IP**.
+
+During CI/CD troubleshooting, temporary access from `0.0.0.0/0` was used only to verify GitHub Actions runner connectivity. After successful deployment verification, the rule was reverted to **My IP**.
+
+The production application itself is exposed through **HTTPS on port 443**, while the Docker application port `5000` remains bound to `127.0.0.1` and is not directly exposed to the internet.
+
+
 # 🔍 Monitoring & Troubleshooting
 
 The production application can be monitored using Docker, Nginx, and system-level commands.
