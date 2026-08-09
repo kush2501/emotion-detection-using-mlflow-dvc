@@ -54,6 +54,7 @@ Rather than focusing only on building a predictive model, this repository demons
 ---
 
 # 🏗️ Project Architecture
+![End-to-End MLOps Architecture](docs/images/mlops-architecture.png)
 
 ```text
                  Raw Dataset
