@@ -56,7 +56,7 @@ Rather than focusing only on building a predictive model, this repository demons
 # 🏗️ Project Architecture
 ![End-to-End MLOps Architecture](docs/images/mlops-architecture.png)
 
-```text
+ ```text
                  Raw Dataset
                       │
                       ▼
@@ -371,6 +371,21 @@ Every push to the `main` branch automatically triggers GitHub Actions to:
 - Validate the Docker build
 
 This helps ensure that code changes do not break the project pipeline.
+
+
+## 🚀 Continuous Deployment
+
+The project also includes an automated deployment workflow using GitHub Actions.
+
+When the deployment workflow runs:
+
+1. GitHub Actions connects to the AWS EC2 server through SSH.
+2. The latest Docker image is pulled from Docker Hub.
+3. The existing production container is replaced with the latest image.
+4. The new container is started with the configured production settings.
+5. A health check verifies that the application is running successfully.
+
+This provides an automated path from the repository to the production environment.
 
 ---
 
