@@ -417,6 +417,17 @@ http://localhost:5000
 
 The application has been deployed as a production-oriented Machine Learning service on AWS EC2.
 
+# 🔍 Monitoring & Troubleshooting
+
+The production application can be monitored using Docker, Nginx, and system-level commands.
+
+### Docker Monitoring
+
+Check running containers:
+
+```bash
+docker ps
+
 ## Production Architecture
 
 ```text
