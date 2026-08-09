@@ -40,7 +40,7 @@ jobs:
           echo "SSH key file created successfully."
           ls -l "$HOME/.ssh/ec2_key.pem"
 
-          echo "Testing EC2_HOST..."
+                    echo "Testing EC2_HOST..."
           echo "Host length: ${#EC2_HOST}"
 
           if [ -z "$EC2_HOST" ]; then
@@ -49,15 +49,15 @@ jobs:
           fi
 
           echo "Running DNS lookup..."
-          getent hosts "$EC2_HOST" || true
+          getent hosts "$EC2_HOST" || echo "DNS lookup failed"
 
           echo "Testing port 22..."
-          timeout 10 bash -c "</dev/tcp/$EC2_HOST/22" && echo "Port 22 reachable" || echo "Port 22 NOT reachable"
+          timeout 10 bash -c "</dev/tcp/$EC2_HOST/22" \
+            && echo "Port 22 reachable" \
+            || echo "Port 22 NOT reachable"
 
           echo "Running ssh-keyscan..."
           ssh-keyscan -T 10 -H "$EC2_HOST" >> "$HOME/.ssh/known_hosts"
-
-          echo "SSH configuration completed."
 
           echo "SSH configuration completed."
 
