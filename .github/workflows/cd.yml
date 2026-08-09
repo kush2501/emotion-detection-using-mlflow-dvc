@@ -1,4 +1,5 @@
 # Production CD workflow
+
 name: Emotion Detection CD
 
 on:
@@ -16,91 +17,112 @@ jobs:
     # CD only runs when CI successfully passes
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
+    permissions:
+      id-token: write
+      contents: read
+
     runs-on: ubuntu-latest
 
     steps:
+
       # ==========================================================
-      # Configure SSH
+      # Configure AWS credentials using GitHub OIDC
       # ==========================================================
-      - name: Configure SSH
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # ==========================================================
+      # Deploy to EC2 using AWS Systems Manager
+      # ==========================================================
+      - name: Deploy to EC2 via SSM
         env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-        run: |
-          echo "Runner home: $HOME"
-          echo "SSH directory check:"
-          ls -la "$HOME"
-
-          mkdir -p "$HOME/.ssh"
-          chmod 700 "$HOME/.ssh"
-
-          printf '%s\n' "$EC2_SSH_KEY" > "$HOME/.ssh/ec2_key.pem"
-          chmod 600 "$HOME/.ssh/ec2_key.pem"
-
-          echo "SSH key file created successfully."
-          ls -l "$HOME/.ssh/ec2_key.pem"
-
-                    echo "Testing EC2_HOST..."
-          echo "Host length: ${#EC2_HOST}"
-
-          if [ -z "$EC2_HOST" ]; then
-            echo "ERROR: EC2_HOST is empty"
-            exit 1
-          fi
-
-          echo "Running DNS lookup..."
-          getent hosts "$EC2_HOST" || echo "DNS lookup failed"
-
-          echo "Testing port 22..."
-          timeout 10 bash -c "</dev/tcp/$EC2_HOST/22" \
-            && echo "Port 22 reachable" \
-            || echo "Port 22 NOT reachable"
-
-          echo "Running ssh-keyscan..."
-          ssh-keyscan -T 10 -H "$EC2_HOST" >> "$HOME/.ssh/known_hosts"
-
-          echo "SSH configuration completed."
-
-      # ==========================================================
-      # Deploy to AWS EC2
-      # ==========================================================
-      - name: Deploy to EC2
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
         run: |
-          ssh -i ~/.ssh/ec2_key.pem "${EC2_USERNAME}@${EC2_HOST}" << EOF
+          IMAGE="${DOCKERHUB_USERNAME}/emotion-detection-mlops:latest"
 
-            docker pull ${DOCKERHUB_USERNAME}/emotion-detection-mlops:latest
+          echo "Deploying image: $IMAGE"
 
-            docker stop emotion-detection-prod || true
-            docker rm emotion-detection-prod || true
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "i-0f2bfe49f443b3ae0" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy Emotion Detection production container" \
+            --parameters "commands=[
+              \"docker pull $IMAGE\",
+              \"docker stop emotion-detection-prod || true\",
+              \"docker rm emotion-detection-prod || true\",
+              \"docker run -d --name emotion-detection-prod --restart unless-stopped -p 127.0.0.1:5000:5000 $IMAGE gunicorn --bind 0.0.0.0:5000 --workers 1 --threads 2 --timeout 60 flask_app.app:app\"
+            ]" \
+            --region "$AWS_REGION" \
+            --query "Command.CommandId" \
+            --output text)
 
-            docker run -d \
-              --name emotion-detection-prod \
-              --restart unless-stopped \
-              -p 127.0.0.1:5000:5000 \
-              ${DOCKERHUB_USERNAME}/emotion-detection-mlops:latest \
-              gunicorn \
-              --bind 0.0.0.0:5000 \
-              --workers 1 \
-              --threads 2 \
-              --timeout 60 \
-              flask_app.app:app
+          echo "Deployment Command ID: $COMMAND_ID"
 
-          EOF
+          echo "Waiting for deployment command to complete..."
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "i-0f2bfe49f443b3ae0" \
+            --region "$AWS_REGION"
+
+          echo "Deployment command completed."
 
       # ==========================================================
-      # Verify Deployment
+      # Verify Production Deployment using AWS Systems Manager
       # ==========================================================
       - name: Verify Production Deployment
         env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
         run: |
-          sleep 15
+          echo "Running production health check..."
 
-          ssh -i ~/.ssh/ec2_key.pem "${EC2_USERNAME}@${EC2_HOST}" \
-            "docker ps --filter name=emotion-detection-prod && \
-             curl --fail --max-time 10 http://localhost:5000"
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "i-0f2bfe49f443b3ae0" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Verify Emotion Detection production deployment" \
+            --parameters 'commands=["docker ps --filter name=emotion-detection-prod","curl --fail --max-time 10 http://localhost:5000"]' \
+            --region "$AWS_REGION" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "Verification Command ID: $COMMAND_ID"
+
+          echo "Waiting for verification command..."
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "i-0f2bfe49f443b3ae0" \
+            --region "$AWS_REGION"
+
+          STATUS=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "i-0f2bfe49f443b3ae0" \
+            --region "$AWS_REGION" \
+            --query "Status" \
+            --output text)
+
+          echo "SSM Verification Status: $STATUS"
+
+          echo "----------------------------------------"
+          echo "Production verification output:"
+          echo "----------------------------------------"
+
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "i-0f2bfe49f443b3ae0" \
+            --region "$AWS_REGION" \
+            --query "StandardOutputContent" \
+            --output text
+
+          echo "----------------------------------------"
+
+          if [ "$STATUS" != "Success" ]; then
+            echo "❌ Production verification failed."
+            exit 1
+          fi
+
+          echo "✅ Production verification successful."
