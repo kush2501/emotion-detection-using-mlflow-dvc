@@ -49,7 +49,7 @@ Rather than focusing only on building a predictive model, this repository demons
 - Automate testing using PyTest.
 - Automate pipeline validation using GitHub Actions.
 - Containerize the application using Docker.
-- Prepare the project for production deployment.
+- Deploy the application as a production-oriented service on AWS EC2.
 
 ---
 
@@ -397,19 +397,83 @@ http://localhost:5000
 
 ---
 
+# 🚀 Production Deployment
+
+The application has been deployed as a production-oriented Machine Learning service on AWS EC2.
+
+## Production Architecture
+
+```text
+GitHub
+   │
+   ▼
+GitHub Actions
+   │
+   ▼
+Docker Hub
+   │
+   ▼
+AWS EC2
+   │
+   ▼
+Docker Container
+   │
+   ▼
+Gunicorn
+   │
+   ▼
+Nginx Reverse Proxy
+   │
+   ▼
+HTTPS / Let's Encrypt
+   │
+   ▼
+DuckDNS Domain
+   │
+   ▼
+Flask ML Application'''
+
+
+## Production Components
+
+| Component | Purpose |
+|---|---|
+| AWS EC2 | Production server |
+| Docker | Application containerization |
+| Gunicorn | Production WSGI server |
+| Nginx | Reverse proxy |
+| DuckDNS | Domain name |
+| Let's Encrypt | SSL/TLS certificate |
+| GitHub Actions | CI/CD automation |
+| Docker Hub | Container image registry |
+
+## Production URL
+
+https://emotion-mlops.duckdns.org
+
+The application is served through HTTPS. Nginx acts as the reverse proxy and forwards requests to the Dockerized Flask application running through Gunicorn.
+
+The Docker application is bound to `127.0.0.1:5000`, so the application port is not directly exposed to the public internet.
+
+## Security
+
+- HTTPS enabled using Let's Encrypt.
+- HTTP requests are redirected to HTTPS.
+- Security headers are configured in Nginx.
+- SSH access is restricted through the AWS Security Group.
+- Application port `5000` is not publicly exposed.
+
+
 # 🚀 Future Improvements
 
-The current project demonstrates a complete end-to-end MLOps workflow. The following enhancements are planned for future versions:
+The current project demonstrates an end-to-end MLOps workflow with automated CI/CD and AWS production deployment. The following enhancements are planned for future versions:
 
-- Deploy the application to a cloud platform (AWS, Azure, GCP, or Render).
 - Implement model monitoring and performance tracking.
 - Add data and concept drift detection.
 - Build a REST API using FastAPI.
 - Support multi-class emotion classification.
 - Integrate model explainability using SHAP.
-- Automate deployment using a complete CI/CD pipeline.
-
----
+- Improve production scalability and infrastructure.
 
 # 👨‍💻 Author
 
