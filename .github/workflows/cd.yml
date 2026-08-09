@@ -63,7 +63,7 @@ jobs:
             docker run -d \
               --name emotion-detection-prod \
               --restart unless-stopped \
-              -p 5000:5000 \
+              -p 127.0.0.1:5000:5000 \
               ${DOCKERHUB_USERNAME}/emotion-detection-mlops:latest \
               gunicorn \
               --bind 0.0.0.0:5000 \
