@@ -56,48 +56,83 @@ Rather than focusing only on building a predictive model, this repository demons
 # 🏗️ Project Architecture
 ![End-to-End MLOps Architecture](docs/images/mlops-architecture.png)
 
- ```text
-                 Raw Dataset
-                      │
-                      ▼
-              Data Ingestion
-                      │
-                      ▼
-            Text Preprocessing
-      (Cleaning + Lemmatization +
-      Stopword Removal + Negation Handling)
-                      │
-                      ▼
-          TF-IDF Feature Engineering
-          (7500 Features, 1-2 Grams)
-                      │
-                      ▼
-        Model Training (Scikit-learn)
-                      │
-                      ▼
-      Hyperparameter Tuning (Optuna)
-                      │
-                      ▼
-          Model Evaluation
-                      │
-                      ▼
-        MLflow Experiment Tracking
-                      │
-                      ▼
-         Model Registration
-    (Champion / Challenger Strategy)
-                      │
-                      ▼
-          DVC Pipeline Versioning
-                      │
-                      ▼
-           Flask Web Application
-                      │
-                      ▼
-        Docker Containerization
-                      │
-                      ▼
-      GitHub Actions Continuous Integration
+```text
+                         Raw Dataset
+                              │
+                              ▼
+                       Data Ingestion
+                              │
+                              ▼
+                     Text Preprocessing
+              (Cleaning + Lemmatization +
+              Stopword Removal + Negation Handling)
+                              │
+                              ▼
+                  TF-IDF Feature Engineering
+                  (7500 Features, 1-2 Grams)
+                              │
+                              ▼
+                  Model Training (Scikit-learn)
+                              │
+                              ▼
+                Hyperparameter Tuning (Optuna)
+                              │
+                              ▼
+                       Model Evaluation
+                              │
+                              ▼
+                  MLflow Experiment Tracking
+                              │
+                              ▼
+                    Model Registration
+                (Champion / Challenger Strategy)
+                              │
+                              ▼
+                     DVC Pipeline Versioning
+                              │
+                              ▼
+                    Flask Web Application
+                              │
+                              ▼
+                    Docker Containerization
+                              │
+                              ▼
+              GitHub Actions Continuous Integration
+                              │
+                       CI Success
+                              │
+                              ▼
+             GitHub Actions Continuous Deployment
+                              │
+                              ▼
+                  GitHub OIDC Authentication
+                              │
+                              ▼
+                  AWS IAM Deployment Role
+                              │
+                              ▼
+              AWS Systems Manager (SSM)
+                              │
+                              ▼
+                       AWS EC2 Instance
+                              │
+                              ▼
+                      Docker Container
+                              │
+                              ▼
+                     Gunicorn + Flask
+                              │
+                              ▼
+                    Nginx Reverse Proxy
+                              │
+                              ▼
+                  HTTPS / Let's Encrypt
+                              │
+                              ▼
+                    DuckDNS Production URL
+                              │
+                              ▼
+                   🚀 Production Application
 ```
 
 ---
@@ -221,10 +256,11 @@ Rather than focusing only on building a predictive model, this repository demons
 
 ```text
 emotion-detection-using-mlflow-dvc/
-│
+
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                  # GitHub Actions CI
+│       ├── ci.yml                # GitHub Actions CI
+│       └── cd.yml                # GitHub Actions CD
 │
 ├── artifacts/                      # Trained model & vectorizer
 │
@@ -276,7 +312,7 @@ emotion-detection-using-mlflow-dvc/
 ### 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/<your-github-username>/emotion-detection-using-mlflow-dvc.git
+git clone https://github.com/kush2501/emotion-detection-using-mlflow-dvc.git
 
 cd emotion-detection-using-mlflow-dvc
 ```
@@ -379,11 +415,11 @@ The project also includes an automated deployment workflow using GitHub Actions.
 
 When the deployment workflow runs:
 
-1. GitHub Actions connects to the AWS EC2 server through SSH.
-2. The latest Docker image is pulled from Docker Hub.
-3. The existing production container is replaced with the latest image.
-4. The new container is started with the configured production settings.
-5. A health check verifies that the application is running successfully.
+1. GitHub Actions authenticates with AWS using GitHub OIDC.
+2. AWS IAM grants temporary credentials through the deployment role.
+3. GitHub Actions uses AWS Systems Manager (SSM) to send deployment commands to the EC2 instance.
+4. SSM executes the Docker deployment commands directly on the EC2 instance.
+5. The production container is restarted and verified automatically.
 
 This provides an automated path from the repository to the production environment.
 
@@ -417,10 +453,42 @@ http://localhost:5000
 
 The application has been deployed as a production-oriented Machine Learning service on AWS EC2.
 
+### 🔐 Current Production Deployment Flow
+
+```text
+GitHub Push
+    ↓
+GitHub Actions CI
+    ↓
+CI Success
+    ↓
+GitHub Actions CD
+    ↓
+GitHub OIDC Authentication
+    ↓
+AWS IAM Deployment Role
+    ↓
+AWS Systems Manager (SSM)
+    ↓
+EC2 Instance
+    ↓
+Docker Container
+    ↓
+Gunicorn + Flask
+    ↓
+Nginx
+    ↓
+HTTPS
+    ↓
+DuckDNS Production Domain
+    ↓
+🚀 Production Flask ML Application
+
+---
 
 ### 🔐 Deployment Security Note
 
-SSH access to the EC2 instance is restricted to trusted sources.
+SSH access is used only for manual EC2 administration and is restricted to trusted sources.
 
 For local administration, SSH port 22 is restricted using the EC2 Security Group with **My IP**.
 
@@ -443,48 +511,64 @@ docker ps
 ## Production Architecture
 
 ```text
-GitHub
-   │
-   ▼
-GitHub Actions
-   │
-   ▼
-Docker Hub
-   │
-   ▼
+GitHub Repository
+        │
+        ▼
+GitHub Actions CI
+        │
+        ▼
+CI Success
+        │
+        ▼
+GitHub Actions CD
+        │
+        ▼
+GitHub OIDC
+        │
+        ▼
+AWS IAM Deployment Role
+        │
+        ▼
+AWS Systems Manager (SSM)
+        │
+        ▼
 AWS EC2
-   │
-   ▼
+        │
+        ├──────────────► Docker Hub
+        │                 │
+        │                 ▼
+        │          Production Image
+        │
+        ▼
 Docker Container
-   │
-   ▼
-Gunicorn
-   │
-   ▼
+        │
+        ▼
+Gunicorn + Flask
+        │
+        ▼
 Nginx Reverse Proxy
-   │
-   ▼
+        │
+        ▼
 HTTPS / Let's Encrypt
-   │
-   ▼
+        │
+        ▼
 DuckDNS Domain
-   │
-   ▼
-Flask ML Application'''
-
 
 ## Production Components
 
 | Component | Purpose |
 |---|---|
+| GitHub Actions | CI/CD automation |
+| GitHub OIDC | Secure authentication from GitHub Actions to AWS |
+| AWS IAM | Provides controlled deployment permissions |
+| AWS Systems Manager (SSM) | Executes deployment commands on EC2 without SSH |
 | AWS EC2 | Production server |
+| Docker Hub | Container image registry |
 | Docker | Application containerization |
 | Gunicorn | Production WSGI server |
-| Nginx | Reverse proxy |
-| DuckDNS | Domain name |
+| Nginx | Reverse proxy and HTTPS termination |
 | Let's Encrypt | SSL/TLS certificate |
-| GitHub Actions | CI/CD automation |
-| Docker Hub | Container image registry |
+| DuckDNS | Production domain |
 
 ## Production URL
 
@@ -499,7 +583,8 @@ The Docker application is bound to `127.0.0.1:5000`, so the application port is 
 - HTTPS enabled using Let's Encrypt.
 - HTTP requests are redirected to HTTPS.
 - Security headers are configured in Nginx.
-- SSH access is restricted through the AWS Security Group.
+- SSH access is restricted through the AWS Security Group and is used only for manual EC2 administration.
+- Production deployment does not depend on SSH; GitHub Actions uses AWS OIDC and Systems Manager (SSM).
 - Application port `5000` is not publicly exposed.
 
 
